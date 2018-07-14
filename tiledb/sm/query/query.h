@@ -42,6 +42,7 @@
 #include "tiledb/sm/query/writer.h"
 #include "tiledb/sm/storage_manager/storage_manager.h"
 
+#include <tiledb/sm/misc/logger.h>
 #include <functional>
 #include <vector>
 
@@ -192,6 +193,160 @@ class Query {
    * @return Status
    */
   Status set_subarray(const void* subarray);
+
+  /**
+   * Return the query subarray
+   * @tparam T
+   * @return vector containing copy of the subarray
+   */
+  template <class T>
+  std::vector<T> subarray() const {
+    void* subarray = nullptr;
+    if (type_ == QueryType::WRITE) {
+      subarray = const_cast<Writer*>(&writer_)->subarray();
+    } else {  // READ
+      subarray = const_cast<Reader*>(&reader_)->subarray();
+    }
+
+    if (subarray == nullptr) {
+      LOG_STATUS(
+          Status::QueryError("Cannot get subarray; subarray is nullpyt"));
+      return {};
+    }
+
+    auto array_schema = this->array_schema();
+    if (array_schema == nullptr) {
+      LOG_STATUS(
+          Status::QueryError("Cannot get subarray; Array schema not set"));
+      return {};
+    }
+
+    // Get subarray size
+    uint64_t subarray_size = 2 * array_schema->coords_size();
+    uint64_t subarray_length =
+        subarray_size / datatype_size(array_schema->coords_type());
+
+    // Switch on domain type to validate the requested template matches the
+    // subarray datatype
+    switch (array_schema->domain()->type()) {
+      case Datatype::INT8: {
+        // Validate templated type being asked for is correct
+        if (!std::is_same<int8_t, T>::value) {
+          LOG_STATUS(Status::QueryError(
+              "Template of type " + std::string(typeid(T).name()) +
+              "used for subarray of type Datatype::INT8"));
+          return {};
+        }
+        break;
+      }
+      case Datatype::UINT8: {
+        // Validate templated type being asked for is correct
+        if (!std::is_same<int8_t, T>::value) {
+          LOG_STATUS(Status::QueryError(
+              "Template of type " + std::string(typeid(T).name()) +
+              "used for subarray of type Datatype::UINT8"));
+          return {};
+        }
+        break;
+      }
+      case Datatype::INT16: {
+        // Validate templated type being asked for is correct
+        if (!std::is_same<int16_t, T>::value) {
+          LOG_STATUS(Status::QueryError(
+              "Template of type " + std::string(typeid(T).name()) +
+              "used for subarray of type Datatype::INT16"));
+          return {};
+        }
+        break;
+      }
+      case Datatype::UINT16: {
+        // Validate templated type being asked for is correct
+        if (!std::is_same<uint16_t, T>::value) {
+          LOG_STATUS(Status::QueryError(
+              "Template of type " + std::string(typeid(T).name()) +
+              "used for subarray of type Datatype::UINT16"));
+          return {};
+        }
+        break;
+      }
+      case Datatype::INT32: {
+        // Validate templated type being asked for is correct
+        if (!std::is_same<int32_t, T>::value) {
+          LOG_STATUS(Status::QueryError(
+              "Template of type " + std::string(typeid(T).name()) +
+              "used for subarray of type Datatype::INT32"));
+          return {};
+        }
+        break;
+      }
+      case Datatype::UINT32: {
+        // Validate templated type being asked for is correct
+        if (!std::is_same<uint32_t, T>::value) {
+          LOG_STATUS(Status::QueryError(
+              "Template of type " + std::string(typeid(T).name()) +
+              "used for subarray of type Datatype::UINT32"));
+          return {};
+        }
+        break;
+      }
+      case Datatype::INT64: {
+        // Validate templated type being asked for is correct
+        if (!std::is_same<int64_t, T>::value) {
+          LOG_STATUS(Status::QueryError(
+              "Template of type " + std::string(typeid(T).name()) +
+              "used for subarray of type Datatype::INT64"));
+          return {};
+        }
+        break;
+      }
+      case Datatype::UINT64: {
+        // Validate templated type being asked for is correct
+        if (!std::is_same<uint64_t, T>::value) {
+          LOG_STATUS(Status::QueryError(
+              "Template of type " + std::string(typeid(T).name()) +
+              "used for subarray of type Datatype::UINT64"));
+          return {};
+        }
+        break;
+      }
+      case Datatype::FLOAT32: {
+        // Validate templated type being asked for is correct
+        if (!std::is_same<float, T>::value) {
+          LOG_STATUS(Status::QueryError(
+              "Template of type " + std::string(typeid(T).name()) +
+              "used for subarray of type Datatype::FLOAT32"));
+          return {};
+        }
+        break;
+      }
+      case Datatype::FLOAT64: {
+        // Validate templated type being asked for is correct
+        if (!std::is_same<double, T>::value) {
+          LOG_STATUS(Status::QueryError(
+              "Template of type " + std::string(typeid(T).name()) +
+              "used for subarray of type Datatype::FLOAT64"));
+          return {};
+        }
+        break;
+      }
+      case Datatype::CHAR:
+      case Datatype::STRING_ASCII:
+      case Datatype::STRING_UTF8:
+      case Datatype::STRING_UTF16:
+      case Datatype::STRING_UTF32:
+      case Datatype::STRING_UCS2:
+      case Datatype::STRING_UCS4:
+      case Datatype::ANY:
+        // Not supported domain type
+        assert(false);
+        return {};
+    }
+    // Return a copy of the subarray using the iterator constructor for vector
+    // casting to templated type The templated type has already been validated
+    // in the above switch statement
+    return std::vector<T>(
+        static_cast<T*>(subarray), static_cast<T*>(subarray) + subarray_length);
+  };
 
   /** Returns the query status. */
   QueryStatus status() const;
