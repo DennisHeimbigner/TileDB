@@ -54,13 +54,23 @@ endif()
 # These includes modify the TILEDB_EXTERNAL_PROJECTS and FORWARD_EP_CMAKE_ARGS
 # variables.
 
+if(ENABLE_COMPRESS_BLOSC)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/FindBlosc_EP.cmake)
+endif()
+if(ENABLE_COMPRESS_BZIP2)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/FindBzip2_EP.cmake)
+endif()
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/FindCatch_EP.cmake)
+if(ENABLE_COMPRESS_LZ4)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/FindLZ4_EP.cmake)
+endif()
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/FindSpdlog_EP.cmake)
+if(ENABLE_COMPRESS_ZLIB)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/FindZlib_EP.cmake)
+endif()
+if(ENABLE_COMPRESS_ZSTD)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/FindZstd_EP.cmake)
+endif()
 
 if (NOT WIN32)
   # Note: on Windows, AWS SDK uses builtin BCrypt.

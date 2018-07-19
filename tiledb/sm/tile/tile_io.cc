@@ -383,15 +383,22 @@ Status TileIO::compress_one_tile(Tile* tile) {
     // Invoke the proper compressor
     Status st = Status::Ok();
     switch (compressor) {
+#ifdef ENABLE_COMPRESS_GZIP
       case Compressor::GZIP:
         st = GZip::compress(level, &input_buffer, &chunk_buffer);
         break;
+#endif
+#ifdef ENABLE_COMPRESS_ZSTD
       case Compressor::ZSTD:
         st = ZStd::compress(level, &input_buffer, &chunk_buffer);
         break;
+#endif
+#ifdef ENABLE_COMPRESS_LZ4
       case Compressor::LZ4:
         st = LZ4::compress(level, &input_buffer, &chunk_buffer);
         break;
+#endif
+#ifdef ENABLE_COMPRESS_BLOSC
       case Compressor::BLOSC_LZ:
         st = Blosc::compress(
             "blosclz", type_size, level, &input_buffer, &chunk_buffer);
@@ -421,17 +428,24 @@ Status TileIO::compress_one_tile(Tile* tile) {
         st = Blosc::compress(
             "zstd", type_size, level, &input_buffer, &chunk_buffer);
         break;
+#endif
+#ifdef ENABLE_COMPRESS_RLE
       case Compressor::RLE:
         st = RLE::compress(cell_size, &input_buffer, &chunk_buffer);
         break;
+#endif
+#ifdef ENABLE_COMPRESS_BZIP2
       case Compressor::BZIP2:
         st = BZip::compress(level, &input_buffer, &chunk_buffer);
         break;
+#endif
+#ifdef ENABLE_COMPRESS_DD
       case Compressor::DOUBLE_DELTA:
         st = DoubleDelta::compress(type, &input_buffer, &chunk_buffer);
         break;
+#endif
       default:
-        assert(0);
+	return st;
     }
 
     RETURN_NOT_OK(st);
@@ -565,7 +579,6 @@ Status TileIO::compute_decompression_chunk_info(
 
 Status TileIO::decompress_tile(Tile* tile) {
   STATS_FUNC_IN(tileio_decompress_tile);
-
   // Simple case - No coordinates
   if (!tile->stores_coords())
     return decompress_one_tile(tile);
@@ -605,18 +618,27 @@ Status TileIO::decompress_one_tile(Tile* tile) {
 
     // Invoke the proper decompressor
     switch (tile->compressor()) {
+#ifdef ENABLE_NO_COMPRESSION
       case Compressor::NO_COMPRESSION:
         assert(0);
         break;
+#endif
+#ifdef ENABLE_COMPRESS_GZIP
       case Compressor::GZIP:
         st = GZip::decompress(&input_buffer, &output_buffer);
         break;
+#endif
+#ifdef ENABLE_COMPRESS_ZSTD
       case Compressor::ZSTD:
         st = ZStd::decompress(&input_buffer, &output_buffer);
         break;
+#endif
+#ifdef ENABLE_COMPRESS_LZ4
       case Compressor::LZ4:
         st = LZ4::decompress(&input_buffer, &output_buffer);
         break;
+#endif
+#ifdef ENABLE_BLOSC
       case Compressor::BLOSC_LZ:
 #undef BLOSC_LZ4
       case Compressor::BLOSC_LZ4:
@@ -630,15 +652,22 @@ Status TileIO::decompress_one_tile(Tile* tile) {
       case Compressor::BLOSC_ZSTD:
         st = Blosc::decompress(&input_buffer, &output_buffer);
         break;
+#endif
+#ifdef ENABLE_COMPRESS_RLE
       case Compressor::RLE:
         st = RLE::decompress(tile->cell_size(), &input_buffer, &output_buffer);
         break;
+#endif
+#ifdef ENABLE_COMPRESS_BZIP2
       case Compressor::BZIP2:
         st = BZip::decompress(&input_buffer, &output_buffer);
         break;
+#endif
+#ifdef ENABLE_COMPRESS_DD
       case Compressor::DOUBLE_DELTA:
         st = DoubleDelta::decompress(type, &input_buffer, &output_buffer);
         break;
+#endif
     }
 
     return st;
@@ -658,12 +687,19 @@ Status TileIO::decompress_one_tile(Tile* tile) {
 
 uint64_t TileIO::overhead(Tile* tile, uint64_t nbytes) const {
   switch (tile->compressor()) {
+#ifdef ENABLE_COMPRESS_GZIP
     case Compressor::GZIP:
       return GZip::overhead(nbytes);
+#endif
+#ifdef ENABLE_COMPRESS_ZSTD
     case Compressor::ZSTD:
       return ZStd::overhead(nbytes);
+#endif
+#ifdef ENABLE_COMPRESS_LZ4
     case Compressor::LZ4:
       return LZ4::overhead(nbytes);
+#endif
+#ifdef ENABLE_BLOSC
     case Compressor::BLOSC_LZ:
 #undef BLOSC_LZ4
     case Compressor::BLOSC_LZ4:
@@ -676,12 +712,19 @@ uint64_t TileIO::overhead(Tile* tile, uint64_t nbytes) const {
 #undef BLOSC_ZSTD
     case Compressor::BLOSC_ZSTD:
       return Blosc::overhead(nbytes);
+#endif
+#ifdef ENABLE_COMPRESS_RLE
     case Compressor::RLE:
       return RLE::overhead(nbytes, tile->cell_size());
+#endif
+#ifdef ENABLE_COMPRESS_BZIP2
     case Compressor::BZIP2:
       return BZip::overhead(nbytes);
+#endif
+#ifdef ENABLE_COMPRESS_DD
     case Compressor::DOUBLE_DELTA:
       return DoubleDelta::overhead(nbytes);
+#endif
     default:
       // No compression
       return 0;

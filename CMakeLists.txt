@@ -79,6 +79,22 @@ if (WIN32 AND NOT TILEDB_TBB_SHARED)
   set(TILEDB_TBB_SHARED ON)
 endif()
 
+# libz is always enabled
+SET(ALLCOMPRESSORS "blosc,bzip2,dd,gzip,lz4,rle,zstd")
+if(TILEDB_COMPRESSORS STREQUAL "")
+#  This is really supposed to be string valued option
+   set(TILEDB_COMPRESSORS "${ALLCOMPRESSORS}" CACHE STRING "Specify set of compressors to implement")
+endif()
+set(TILEDB_COMPRESSORS "${TILEDB_COMPRESSORS},zip")
+message(STATUS "TILEDB_COMPRESSORS=${TILEDB_COMPRESSORS}")
+string(REPLACE "," ";" TDBCOMPRESSORLIST ${TILEDB_COMPRESSORS})
+foreach(CMPL ${TDBCOMPRESSORLIST})
+STRING(TOUPPER ${CMPL} UPCMP)
+set(CMPNAME "ENABLE_COMPRESS_${UPCMP}")
+set(${CMPNAME} ON)
+message(STATUS "${CMPNAME}=ON")
+endforeach()
+
 ############################################################
 # Superbuild setup
 ############################################################
