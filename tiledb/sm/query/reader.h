@@ -258,6 +258,19 @@ class Reader {
   const ArraySchema* array_schema() const;
 
   /**
+   * Return list of attribtues for query
+   * @return vector of attributes for query
+   */
+  std::vector<std::string> attributes() const;
+
+  /**
+   * Fetch AttributeBuffer for attribute
+   * @param attribute to fetch
+   * @return AttributeBuffer for attribute
+   */
+  AttributeBuffer buffer(const std::string& attribute) const;
+
+  /**
    * Returns `true` if the query was incomplete, i.e., if all subarray
    * partitions in the read state have not been processed or there
    * was some buffer overflow.
@@ -362,6 +375,12 @@ class Reader {
    * @return Status
    */
   Status set_subarray(const void* subarray);
+
+  /*
+   * Return the subarray
+   * @return subarray
+   */
+  void* subarray() const;
 
  private:
   /* ********************************* */

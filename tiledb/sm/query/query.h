@@ -36,7 +36,9 @@
 #include "tiledb/sm/enums/query_status.h"
 #include "tiledb/sm/enums/query_type.h"
 #include "tiledb/sm/fragment/fragment_metadata.h"
+#include "tiledb/sm/misc/logger.h"
 #include "tiledb/sm/misc/status.h"
+#include "tiledb/sm/misc/utils.h"
 #include "tiledb/sm/query/dense_cell_range_iter.h"
 #include "tiledb/sm/query/reader.h"
 #include "tiledb/sm/query/writer.h"
@@ -71,6 +73,71 @@ class Query {
 
   /** Returns the array schema. */
   const ArraySchema* array_schema() const;
+
+  /**
+   * Return vector of attributes
+   * @return attributes for query
+   */
+  std::vector<std::string> attributes() const;
+
+  /**
+   * Return a copy of the buffer for a given attribute
+   * @tparam T
+   * @param attribute name of buffer to retrieve
+   * @return a std::pair which contains two pairs. First pair is a pointer to
+   * the value buffer and its size. The second pair is a pointer to the offset
+   * buffer and its size. Note the first pair (the value buffer) is of type T
+   * where the second pair (the offset buffer) is always type uint64_t
+   */
+  template <class T>
+  std::pair<std::pair<T*, uint64_t>, std::pair<uint64_t*, uint64_t>> buffer(
+      const std::string& attribute) const {
+    AttributeBuffer buffer;
+    if (type_ == QueryType::WRITE) {
+      buffer = writer_.buffer(attribute);
+    } else {  // READ
+      buffer = reader_.buffer(attribute);
+    }
+
+    // Check if buffer is null
+    if (buffer.buffer_ == nullptr || buffer.buffer_size_ == nullptr) {
+      LOG_STATUS(
+          Status::QueryError("Cannot get buffer; buffer attribute is nullptr"));
+      return {{}, {}};
+    }
+
+    // Get array schema, used for validating template type vs attribute datatype
+    auto array_schema = this->array_schema();
+    if (array_schema == nullptr) {
+      LOG_STATUS(Status::QueryError("Cannot get buffer; Array schema not set"));
+      return {{}, {}};
+    }
+
+    // Get attribute object
+    auto attr = array_schema->attribute(attribute);
+    if (attr == nullptr) {
+      LOG_STATUS(Status::QueryError(
+          "Cannot get buffer; Attribute from Array schema is nullptr"));
+      return {{}, {}};
+    }
+
+    // Validate template type matches attribute datatype
+    if (!tiledb::sm::utils::check_template_type_to_datatype<T>(attr->type())
+             .ok())
+      return {{}, {}};
+
+    std::pair<uint64_t*, uint64_t> offset_buffer;
+    if (buffer.buffer_var_ != nullptr && buffer.buffer_var_size_ != nullptr)
+      offset_buffer = std::pair<uint64_t*, uint64_t>(
+          static_cast<uint64_t*>(buffer.buffer_var_),
+          *buffer.buffer_var_size_ / sizeof(uint64_t));
+    // Return pair of pairs with value and offset buffers
+    return std::pair<std::pair<T*, uint64_t>, std::pair<uint64_t*, uint64_t>>(
+        std::pair<T*, uint64_t>(
+            static_cast<T*>(buffer.buffer_),
+            *buffer.buffer_size_ / datatype_size(attr->type())),
+        offset_buffer);
+  };
 
   /**
    * Marks a query that has not yet been started as failed. This should not be
@@ -192,6 +259,50 @@ class Query {
    * @return Status
    */
   Status set_subarray(const void* subarray);
+
+  /**
+   * Return the query subarray
+   * @tparam T
+   * @return vector containing copy of the subarray
+   */
+  template <class T>
+  std::vector<T> subarray() const {
+    void* subarray = nullptr;
+    if (type_ == QueryType::WRITE) {
+      subarray = writer_.subarray();
+    } else {  // READ
+      subarray = reader_.subarray();
+    }
+
+    if (subarray == nullptr) {
+      LOG_STATUS(
+          Status::QueryError("Cannot get subarray; subarray is nullptr"));
+      return {};
+    }
+
+    auto array_schema = this->array_schema();
+    if (array_schema == nullptr) {
+      LOG_STATUS(
+          Status::QueryError("Cannot get subarray; Array schema not set"));
+      return {};
+    }
+
+    // Get subarray size
+    uint64_t subarray_size = 2 * array_schema->coords_size();
+    uint64_t subarray_length =
+        subarray_size / datatype_size(array_schema->coords_type());
+
+    // Check template matches datatype
+    if (!tiledb::sm::utils::check_template_type_to_datatype<T>(
+             array_schema->domain()->type())
+             .ok())
+      return {};
+    // Return a copy of the subarray using the iterator constructor for vector
+    // casting to templated type The templated type has already been validated
+    // in the above switch statement
+    return std::vector<T>(
+        static_cast<T*>(subarray), static_cast<T*>(subarray) + subarray_length);
+  };
 
   /** Returns the query status. */
   QueryStatus status() const;

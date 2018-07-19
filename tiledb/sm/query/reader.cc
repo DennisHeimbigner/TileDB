@@ -104,6 +104,17 @@ const ArraySchema* Reader::array_schema() const {
   return array_schema_;
 }
 
+std::vector<std::string> Reader::attributes() const {
+  return attributes_;
+}
+
+AttributeBuffer Reader::buffer(const std::string& attribute) const {
+  auto attrbuf = attr_buffers_.find(attribute);
+  if (attrbuf == attr_buffers_.end())
+    return AttributeBuffer{};
+  return attrbuf->second;
+}
+
 bool Reader::incomplete() const {
   return read_state_.overflowed_ ||
          read_state_.cur_subarray_partition_ != nullptr;
@@ -457,6 +468,10 @@ Status Reader::set_subarray(const void* subarray) {
         subarray_size);
 
   return Status::Ok();
+}
+
+void* Reader::subarray() const {
+  return read_state_.subarray_;
 }
 
 /* ****************************** */

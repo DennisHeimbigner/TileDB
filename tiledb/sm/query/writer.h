@@ -115,6 +115,19 @@ class Writer {
   /** Returns the array schema. */
   const ArraySchema* array_schema() const;
 
+  /**
+   * Return list of attribtues for query
+   * @return vector of attributes for query
+   */
+  std::vector<std::string> attributes() const;
+
+  /**
+   * Fetch AttributeBuffer for attribute
+   * @param attribute to fetch
+   * @return AttributeBuffer for attribute
+   */
+  AttributeBuffer buffer(const std::string& attribute) const;
+
   /** Finalizes the reader. */
   Status finalize();
 
@@ -182,6 +195,12 @@ class Writer {
    * @return Status
    */
   Status set_subarray(const void* subarray);
+
+  /*
+   * Return the subarray
+   * @return subarray
+   */
+  void* subarray() const;
 
   /** Performs a write query using its set members. */
   Status write();
