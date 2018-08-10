@@ -38,7 +38,7 @@
 #include <set>
 #include <sstream>
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <sys/timeb.h>
 #include <sys/types.h>
 #else
@@ -471,7 +471,7 @@ double coverage(const T* a, const T* b, unsigned dim_num) {
 namespace time {
 
 uint64_t timestamp_ms() {
-#ifdef _MSC_VER
+#ifdef _WIN32
   struct _timeb tb;
   memset(&tb, 0, sizeof(struct _timeb));
   _ftime_s(&tb);

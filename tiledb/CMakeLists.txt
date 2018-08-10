@@ -89,35 +89,36 @@ set(TILEDB_CORE_SOURCES
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/buffer/preallocated_buffer.cc
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/c_api/tiledb.cc
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/cache/lru_cache.cc
+)
 
-if(ENABLE_COMPRESS_BLOSC)
+IF(ENABLE_COMPRESS_BLOSC)
  set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/blosc_compressor.cc)
-endif()
-if(ENABLE_COMPRESS_BZIP2)
+ENDIF()
+IF(ENABLE_COMPRESS_BZIP2)
  set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/bzip_compressor.cc)
-endif()
-if(ENABLE_COMPRESS_DD)
+ENDIF()
+IF(ENABLE_COMPRESS_DD)
  set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/dd_compressor.cc)
-endif()
-if(ENABLE_COMPRESS_GZIP)
+ENDIF()
+IF(ENABLE_COMPRESS_GZIP)
  set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/gzip_compressor.cc)
-endif()
-if(ENABLE_COMPRESS_LZ4)
+ENDIF()
+IF(ENABLE_COMPRESS_LZ4)
  set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/lz4_compressor.cc)
-endif()
-if(ENABLE_COMPRESS_RLE)
+ENDIF()
+IF(ENABLE_COMPRESS_RLE)
  set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/rle_compressor.cc)
-endif()
-if(ENABLE_COMPRESS_ZSTD)
+ENDIF()
+IF(ENABLE_COMPRESS_ZSTD)
  set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/zstd_compressor.cc)
-endif()
+ENDIF()
 
 set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/filesystem/hdfs_filesystem.cc

@@ -33,7 +33,7 @@
 #ifndef TILEDB_POSIX_FILESYSTEM_H
 #define TILEDB_POSIX_FILESYSTEM_H
 
-#ifndef _MSC_VER
+#ifndef _WIN32
 
 #include <ftw.h>
 #include <sys/types.h>
@@ -287,6 +287,6 @@ class Posix {
 }  // namespace sm
 }  // namespace tiledb
 
-#endif  // !_MSC_VER
+#endif  // !_WIN32
 
 #endif  // TILEDB_POSIX_FILESYSTEM_H

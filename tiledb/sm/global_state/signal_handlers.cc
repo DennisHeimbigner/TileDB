@@ -36,7 +36,7 @@
 
 #include <signal.h>
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <Windows.h>
 #include <io.h>
 #else
@@ -96,7 +96,7 @@ extern "C" void tiledb_signal_handler(int signum) {
   }
 }
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 /* ********************************* */
 /*       Win32 implementations       */
 /* ********************************* */

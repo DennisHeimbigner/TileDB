@@ -42,7 +42,7 @@ namespace sm {
 Logger::Logger() {
   logger_ = spdlog::get("tiledb");
   if (logger_ == nullptr) {
-#ifdef _MSC_VER
+#ifdef _WIN32
     logger_ = spdlog::stdout_logger_mt("tiledb");
 #else
     logger_ = spdlog::stdout_color_mt("tiledb");

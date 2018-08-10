@@ -30,7 +30,7 @@
  * This file defines the Windows-specific TileDB constants.
  */
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 
 #include "tiledb/sm/misc/win_constants.h"
 
@@ -49,4 +49,4 @@ const unsigned path_max_len = MAX_PATH;
 }  // namespace sm
 }  // namespace tiledb
 
-#endif  // _MSC_VER
+#endif  // _WIN32
