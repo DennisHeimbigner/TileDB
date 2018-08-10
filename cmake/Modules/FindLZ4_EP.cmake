@@ -34,33 +34,36 @@
 # Include some common helper functions.
 include(TileDBCommon)
 
-# Search the path set during the superbuild for the EP.
-set(LZ4_PATHS ${TILEDB_EP_INSTALL_PREFIX})
-
-find_path(LZ4_INCLUDE_DIR
-  NAMES lz4.h
-  PATHS ${LZ4_PATHS}
-  PATH_SUFFIXES include
-  ${TILEDB_DEPS_NO_DEFAULT_PATH}
+# First check for a static version in the EP prefix.
+find_library(LZ4_LIBRARIES
+  NAMES
+    liblz4${CMAKE_STATIC_LIBRARY_SUFFIX}
+    liblz4_static${CMAKE_STATIC_LIBRARY_SUFFIX}
+  PATHS ${TILEDB_EP_INSTALL_PREFIX}
+  PATH_SUFFIXES lib
+  NO_DEFAULT_PATH
 )
 
-
-# Link statically if installed with the EP.
-if (TILEDB_USE_STATIC_LZ4)
-  find_library(LZ4_LIBRARIES
-    NAMES
-      liblz4${CMAKE_STATIC_LIBRARY_SUFFIX}
-      liblz4_static${CMAKE_STATIC_LIBRARY_SUFFIX}
-    PATHS ${LZ4_PATHS}
-    PATH_SUFFIXES lib
-    ${TILEDB_DEPS_NO_DEFAULT_PATH}
+if (LZ4_LIBRARIES)
+  set(LZ4_STATIC_EP_FOUND TRUE)
+  find_path(LZ4_INCLUDE_DIR
+    NAMES lz4.h
+    PATHS ${TILEDB_EP_INSTALL_PREFIX}
+    PATH_SUFFIXES include
+    NO_DEFAULT_PATH
   )
 else()
+  set(LZ4_STATIC_EP_FOUND FALSE)
+  # Static EP not found, search in system paths.
   find_library(LZ4_LIBRARIES
     NAMES
       lz4 liblz4
-    PATHS ${LZ4_PATHS}
     PATH_SUFFIXES lib bin
+    ${TILEDB_DEPS_NO_DEFAULT_PATH}
+  )
+  find_path(LZ4_INCLUDE_DIR
+    NAMES lz4.h
+    PATH_SUFFIXES include
     ${TILEDB_DEPS_NO_DEFAULT_PATH}
   )
 endif()
@@ -76,8 +79,8 @@ if (NOT LZ4_FOUND)
     if (WIN32)
       ExternalProject_Add(ep_lz4
         PREFIX "externals"
-        URL "https://github.com/lz4/lz4/releases/download/v1.8.1.2/lz4_v1_8_1_win64.zip"
-        URL_HASH SHA1=c0f50f59f4cf4ff861d9dffc64c735032e7778f9
+        URL "https://github.com/lz4/lz4/releases/download/v1.8.2/lz4_v1_8_2_win64.zip"
+        URL_HASH SHA1=330f97a88b91a4b9a15ddfe063321849a3a9e62d
         CONFIGURE_COMMAND ""
         BUILD_IN_SOURCE TRUE
         BUILD_COMMAND ""
@@ -90,7 +93,7 @@ if (NOT LZ4_FOUND)
             ${TILEDB_EP_BASE}/src/ep_lz4/dll/liblz4.lib
             ${TILEDB_EP_INSTALL_PREFIX}/bin &&
           ${CMAKE_COMMAND} -E copy_if_different
-            ${TILEDB_EP_BASE}/src/ep_lz4/dll/liblz4.so.1.8.1.dll
+            ${TILEDB_EP_BASE}/src/ep_lz4/dll/liblz4.so.1.8.2.dll
             ${TILEDB_EP_INSTALL_PREFIX}/bin/liblz4.dll &&
           ${CMAKE_COMMAND} -E copy_if_different
             ${TILEDB_EP_BASE}/src/ep_lz4/static/liblz4_static.lib
@@ -108,8 +111,8 @@ if (NOT LZ4_FOUND)
     else()
       ExternalProject_Add(ep_lz4
         PREFIX "externals"
-        URL "https://github.com/lz4/lz4/archive/v1.8.1.2.zip"
-        URL_HASH SHA1=6d89d448f976188b44abcdb9083cac4ebcfbb46c
+        URL "https://github.com/lz4/lz4/archive/v1.8.2.zip"
+        URL_HASH SHA1=ebf6c227965318ecd73820ade8f5dbd83d48b3e8
         CONFIGURE_COMMAND ""
         BUILD_IN_SOURCE TRUE
         INSTALL_COMMAND $(MAKE) PREFIX=${TILEDB_EP_INSTALL_PREFIX} install
@@ -121,9 +124,6 @@ if (NOT LZ4_FOUND)
       )
     endif()
     list(APPEND TILEDB_EXTERNAL_PROJECTS ep_lz4)
-    list(APPEND FORWARD_EP_CMAKE_ARGS
-      -DTILEDB_USE_STATIC_LZ4=TRUE
-    )
   else()
     message(FATAL_ERROR "Unable to find LZ4")
   endif()
@@ -138,6 +138,6 @@ if (LZ4_FOUND AND NOT TARGET LZ4::LZ4)
 endif()
 
 # If we built a static EP, install it if required.
-if (TILEDB_USE_STATIC_LZ4 AND TILEDB_INSTALL_STATIC_DEPS)
+if (LZ4_STATIC_EP_FOUND AND TILEDB_INSTALL_STATIC_DEPS)
   install_target_libs(LZ4::LZ4)
 endif()

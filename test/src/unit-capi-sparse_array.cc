@@ -293,7 +293,7 @@ void SparseArrayFx::remove_temp_dir(const std::string& path) {
 std::string SparseArrayFx::random_bucket_name(const std::string& prefix) {
   std::stringstream ss;
   ss << prefix << "-" << std::this_thread::get_id() << "-"
-     << tiledb::sm::utils::timestamp_ms();
+     << tiledb::sm::utils::time::timestamp_ms();
   return ss.str();
 }
 
@@ -745,7 +745,7 @@ void SparseArrayFx::check_sparse_array_unordered_with_duplicates_error(
 
 void SparseArrayFx::check_sparse_array_unordered_with_duplicates_no_check(
     const std::string& array_name) {
-  // Create TileDB context, setting
+  // Create TileDB context with config
   tiledb_config_t* config = nullptr;
   tiledb_error_t* error = nullptr;
   REQUIRE(tiledb_config_alloc(&config, &error) == TILEDB_OK);
@@ -2334,4 +2334,106 @@ TEST_CASE_METHOD(
   create_sparse_array(array_name);
   write_sparse_array_missing_attributes(array_name);
   check_sparse_array_no_results(array_name);
+}
+
+TEST_CASE_METHOD(
+    SparseArrayFx,
+    "C API: Test sparse array, set subarray should error",
+    "[capi], [sparse], [sparse-set-subarray]") {
+  std::string array_name =
+      FILE_URI_PREFIX + FILE_TEMP_DIR + "sparse_set_subarray";
+  create_sparse_array(array_name);
+
+  // Create TileDB context
+  tiledb_ctx_t* ctx = nullptr;
+  REQUIRE(tiledb_ctx_alloc(nullptr, &ctx) == TILEDB_OK);
+
+  // Open array
+  tiledb_array_t* array;
+  int rc = tiledb_array_alloc(ctx, array_name.c_str(), &array);
+  CHECK(rc == TILEDB_OK);
+  rc = tiledb_array_open(ctx, array, TILEDB_WRITE);
+  CHECK(rc == TILEDB_OK);
+
+  // Create WRITE query
+  tiledb_query_t* query;
+  rc = tiledb_query_alloc(ctx, array, TILEDB_WRITE, &query);
+  CHECK(rc == TILEDB_OK);
+
+  // Set some subarray
+  uint64_t subarray[] = {1, 1, 1, 1};
+  rc = tiledb_query_set_subarray(ctx, query, subarray);
+  CHECK(rc == TILEDB_ERR);
+
+  // Close array
+  CHECK(tiledb_array_close(ctx, array) == TILEDB_OK);
+
+  // Clean up
+  tiledb_query_free(&query);
+  tiledb_array_free(&array);
+  tiledb_ctx_free(&ctx);
+}
+
+TEST_CASE_METHOD(
+    SparseArrayFx,
+    "C API: Test sparse array, check if coords exist",
+    "[capi], [sparse], [sparse-coords-exist]") {
+  std::string array_name =
+      FILE_URI_PREFIX + FILE_TEMP_DIR + "sparse_coords_exist";
+  create_sparse_array(array_name);
+
+  // Create TileDB context
+  tiledb_ctx_t* ctx = nullptr;
+  REQUIRE(tiledb_ctx_alloc(nullptr, &ctx) == TILEDB_OK);
+
+  // Open array
+  tiledb_array_t* array;
+  int rc = tiledb_array_alloc(ctx, array_name.c_str(), &array);
+  CHECK(rc == TILEDB_OK);
+  rc = tiledb_array_open(ctx, array, TILEDB_WRITE);
+  CHECK(rc == TILEDB_OK);
+
+  // Create WRITE query
+  tiledb_query_t* query;
+  rc = tiledb_query_alloc(ctx, array, TILEDB_WRITE, &query);
+  CHECK(rc == TILEDB_OK);
+  rc = tiledb_query_set_layout(ctx, query, TILEDB_GLOBAL_ORDER);
+  CHECK(rc == TILEDB_OK);
+
+  // Set attribute buffers
+  int a1[] = {1, 2};
+  uint64_t a1_size = sizeof(a1);
+  rc = tiledb_query_set_buffer(ctx, query, "a1", a1, &a1_size);
+  CHECK(rc == TILEDB_OK);
+  char a2[] = {'a', 'b'};
+  uint64_t a2_size = sizeof(a2);
+  uint64_t a2_off[] = {0, 1};
+  uint64_t a2_off_size = sizeof(a2_off);
+  rc = tiledb_query_set_buffer_var(
+      ctx, query, "a2", a2_off, &a2_off_size, a2, &a2_size);
+  CHECK(rc == TILEDB_OK);
+  float a3[] = {1.1f, 1.2f, 2.1f, 2.2f};
+  uint64_t a3_size = sizeof(a3);
+  rc = tiledb_query_set_buffer(ctx, query, "a3", a3, &a3_size);
+  CHECK(rc == TILEDB_OK);
+
+  // Submit query - should error
+  CHECK(tiledb_query_submit(ctx, query) == TILEDB_ERR);
+
+  // Set coordinates
+  uint64_t coords[] = {1, 2, 1, 1};
+  uint64_t coords_size = sizeof(coords);
+  rc = tiledb_query_set_buffer(ctx, query, TILEDB_COORDS, coords, &coords_size);
+  CHECK(rc == TILEDB_OK);
+
+  // Submit query - ok
+  CHECK(tiledb_query_submit(ctx, query) == TILEDB_OK);
+
+  // Close array
+  CHECK(tiledb_array_close(ctx, array) == TILEDB_OK);
+
+  // Clean up
+  tiledb_query_free(&query);
+  tiledb_array_free(&array);
+  tiledb_ctx_free(&ctx);
 }

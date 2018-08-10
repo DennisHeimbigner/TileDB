@@ -530,7 +530,7 @@ void ArraySchemaFx::load_and_check_array_schema(const std::string& path) {
 std::string ArraySchemaFx::random_bucket_name(const std::string& prefix) {
   std::stringstream ss;
   ss << prefix << "-" << std::this_thread::get_id() << "-"
-     << tiledb::sm::utils::timestamp_ms();
+     << tiledb::sm::utils::time::timestamp_ms();
   return ss.str();
 }
 
@@ -843,6 +843,21 @@ TEST_CASE_METHOD(
   dim_domain[1] = 1;
   rc = tiledb_dimension_alloc(
       ctx_, "d4", TILEDB_UINT64, dim_domain, &tile_extent, &d4);
+  CHECK(rc == TILEDB_ERR);
+
+  // Create dimension with 0 tile extent
+  tiledb_dimension_t* d5;
+  int64_t dim_domain_2[] = {0, 10};
+  int64_t tile_extent_2 = 0;
+  rc = tiledb_dimension_alloc(
+      ctx_, "d5", TILEDB_INT64, dim_domain_2, &tile_extent_2, &d5);
+  CHECK(rc == TILEDB_ERR);
+
+  // Create dimension with negative tile extent
+  tiledb_dimension_t* d6;
+  tile_extent_2 = -1;
+  rc = tiledb_dimension_alloc(
+      ctx_, "d6", TILEDB_INT64, dim_domain_2, &tile_extent_2, &d6);
   CHECK(rc == TILEDB_ERR);
 
   // Clean up
