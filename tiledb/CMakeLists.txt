@@ -89,13 +89,38 @@ set(TILEDB_CORE_SOURCES
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/buffer/preallocated_buffer.cc
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/c_api/tiledb.cc
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/cache/lru_cache.cc
-  ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/blosc_compressor.cc
-  ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/bzip_compressor.cc
-  ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/dd_compressor.cc
-  ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/gzip_compressor.cc
-  ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/lz4_compressor.cc
-  ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/rle_compressor.cc
-  ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/zstd_compressor.cc
+)
+
+IF(ENABLE_FILTER_BLOSC)
+ set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
+  ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/blosc_compressor.cc)
+ENDIF()
+IF(ENABLE_FILTER_BZIP2)
+ set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
+  ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/bzip_compressor.cc)
+ENDIF()
+IF(ENABLE_FILTER_DD)
+ set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
+  ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/dd_compressor.cc)
+ENDIF()
+IF(ENABLE_FILTER_GZIP)
+ set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
+  ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/gzip_compressor.cc)
+ENDIF()
+IF(ENABLE_FILTER_LZ4)
+ set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
+  ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/lz4_compressor.cc)
+ENDIF()
+IF(ENABLE_FILTER_RLE)
+ set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
+  ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/rle_compressor.cc)
+ENDIF()
+IF(ENABLE_FILTER_ZSTD)
+ set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
+  ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/compressors/zstd_compressor.cc)
+ENDIF()
+
+set(TILEDB_CORE_SOURCES ${TILEDB_CORE_SOURCES}
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/filesystem/hdfs_filesystem.cc
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/filesystem/posix.cc
   ${TILEDB_CORE_INCLUDE_DIR}/tiledb/sm/filesystem/s3.cc
@@ -270,20 +295,42 @@ endif()
 # Required dependencies. These come last as any prior dependencies relying on
 # these must be listed first for Linux. E.g. AWSSDK and Curl depend on Zlib,
 # which is installed here.
-find_package(Blosc_EP REQUIRED)
-find_package(Bzip2_EP REQUIRED)
-find_package(LZ4_EP REQUIRED)
 find_package(Spdlog_EP REQUIRED)
 find_package(Zlib_EP REQUIRED)
+if(ENABLE_FILTER_BLOSC)
+find_package(Blosc_EP REQUIRED)
+endif()
+if(ENABLE_FILTER_BZIP2)
+find_package(Bzip2_EP REQUIRED)
+endif()
+if(ENABLE_FILTER_LZ4)
+find_package(LZ4_EP REQUIRED)
+endif()
+if(ENABLE_FILTER_ZLIB)
+find_package(Zlib_EP REQUIRED)
+endif()
+if(ENABLE_FILTER_ZSTD)
 find_package(Zstd_EP REQUIRED)
+endif()
+
+SET(COMP Zlib::Zlib)
+if(ENABLE_FILTER_BLOSC)
+SET(CMP ${CMP};Blosc::Blosc)
+endif()
+if(ENABLE_FILTER_BZIP2)
+SET(CMP ${CMP};Bzip2::Bzip2)
+endif()
+if(ENABLE_FILTER_LZ4)
+SET(CMP ${CMP};LZ4::LZ4)
+endif()
+if(ENABLE_FILTER_ZSTD)
+SET(CMP ${CMP};Zstd::Zstd)
+endif()
+
 target_link_libraries(TILEDB_CORE_OBJECTS_ILIB
   INTERFACE
-    Blosc::Blosc
-    Bzip2::Bzip2
-    LZ4::LZ4
+    ${CMP}
     Spdlog::Spdlog
-    Zlib::Zlib
-    Zstd::Zstd
 )
 if (NOT WIN32)
   target_link_libraries(TILEDB_CORE_OBJECTS_ILIB
@@ -346,17 +393,27 @@ if (TILEDB_STATIC)
     endif()
   endmacro()
 
-  append_dep_lib(Blosc::Blosc)
-  append_dep_lib(Bzip2::Bzip2)
   append_dep_lib(Curl::Curl)
-  append_dep_lib(LZ4::LZ4)
   append_dep_lib(TBB::tbb)
-  append_dep_lib(Zlib::Zlib)
-  append_dep_lib(Zstd::Zstd)
   append_dep_lib(OpenSSL::SSL)
   append_dep_lib(OpenSSL::Crypto)
   append_dep_lib(AWSSDK::aws-cpp-sdk-s3)
   append_dep_lib(AWSSDK::aws-cpp-sdk-core)
+if(ENABLE_FILTER_BLOSC)
+  append_dep_lib(Blosc::Blosc)
+endif()
+if(ENABLE_FILTER_BZIP2)
+  append_dep_lib(Bzip2::Bzip2)
+endif()
+if(ENABLE_FILTER_LZ4)
+  append_dep_lib(LZ4::LZ4)
+endif()
+if(ENABLE_FILTER_ZLIB)
+  append_dep_lib(Zlib::Zlib)
+endif()
+if(ENABLE_FILTER_ZSTD)
+  append_dep_lib(Zstd::Zstd)
+endif()
 
   # Spdlog is a special case because it is header-only.
   string(CONCAT TILEDB_STATIC_DEP_STRING

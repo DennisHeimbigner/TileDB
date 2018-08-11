@@ -384,14 +384,21 @@ Status TileIO::compress_one_tile(Tile* tile) {
     Status st = Status::Ok();
     switch (compressor) {
       case Compressor::GZIP:
+#ifdef ENABLE_FILTER_GZIP
         st = GZip::compress(level, &input_buffer, &chunk_buffer);
+#endif
         break;
       case Compressor::ZSTD:
+#ifdef ENABLE_FILTER_ZSTD
         st = ZStd::compress(level, &input_buffer, &chunk_buffer);
+#endif
         break;
       case Compressor::LZ4:
+#ifdef ENABLE_FILTER_LZ4
         st = LZ4::compress(level, &input_buffer, &chunk_buffer);
+#endif
         break;
+#ifdef ENABLE_FILTER_BLOSC
       case Compressor::BLOSC_LZ:
         st = Blosc::compress(
             "blosclz", type_size, level, &input_buffer, &chunk_buffer);
@@ -421,17 +428,24 @@ Status TileIO::compress_one_tile(Tile* tile) {
         st = Blosc::compress(
             "zstd", type_size, level, &input_buffer, &chunk_buffer);
         break;
+#endif
       case Compressor::RLE:
+#ifdef ENABLE_FILTER_RLE
         st = RLE::compress(cell_size, &input_buffer, &chunk_buffer);
+#endif
         break;
       case Compressor::BZIP2:
+#ifdef ENABLE_FILTER_BZIP2
         st = BZip::compress(level, &input_buffer, &chunk_buffer);
+#endif
         break;
       case Compressor::DOUBLE_DELTA:
+#ifdef ENABLE_FILTER_DD
         st = DoubleDelta::compress(type, &input_buffer, &chunk_buffer);
+#endif
         break;
       default:
-        assert(0);
+	return st;
     }
 
     RETURN_NOT_OK(st);
@@ -606,16 +620,24 @@ Status TileIO::decompress_one_tile(Tile* tile) {
     // Invoke the proper decompressor
     switch (tile->compressor()) {
       case Compressor::NO_COMPRESSION:
+#ifdef ENABLE_NO_COMPRESSION
         assert(0);
+#endif
         break;
       case Compressor::GZIP:
+#ifdef ENABLE_FILTER_GZIP
         st = GZip::decompress(&input_buffer, &output_buffer);
+#endif
         break;
       case Compressor::ZSTD:
+#ifdef ENABLE_FILTER_ZSTD
         st = ZStd::decompress(&input_buffer, &output_buffer);
+#endif
         break;
       case Compressor::LZ4:
+#ifdef ENABLE_FILTER_LZ4
         st = LZ4::decompress(&input_buffer, &output_buffer);
+#endif
         break;
       case Compressor::BLOSC_LZ:
 #undef BLOSC_LZ4
@@ -628,16 +650,24 @@ Status TileIO::decompress_one_tile(Tile* tile) {
       case Compressor::BLOSC_ZLIB:
 #undef BLOSC_ZSTD
       case Compressor::BLOSC_ZSTD:
+#ifdef ENABLE_FILTER_BLOSC
         st = Blosc::decompress(&input_buffer, &output_buffer);
+#endif
         break;
       case Compressor::RLE:
+#ifdef ENABLE_FILTER_RLE
         st = RLE::decompress(tile->cell_size(), &input_buffer, &output_buffer);
+#endif
         break;
       case Compressor::BZIP2:
+#ifdef ENABLE_FILTER_BZIP2
         st = BZip::decompress(&input_buffer, &output_buffer);
+#endif
         break;
       case Compressor::DOUBLE_DELTA:
+#ifdef ENABLE_FILTER_DD
         st = DoubleDelta::decompress(type, &input_buffer, &output_buffer);
+#endif
         break;
     }
 
@@ -658,12 +688,19 @@ Status TileIO::decompress_one_tile(Tile* tile) {
 
 uint64_t TileIO::overhead(Tile* tile, uint64_t nbytes) const {
   switch (tile->compressor()) {
+#ifdef ENABLE_FILTER_GZIP
     case Compressor::GZIP:
       return GZip::overhead(nbytes);
+#endif
+#ifdef ENABLE_FILTER_ZSTD
     case Compressor::ZSTD:
       return ZStd::overhead(nbytes);
+#endif
+#ifdef ENABLE_FILTER_LZ4
     case Compressor::LZ4:
       return LZ4::overhead(nbytes);
+#endif
+#ifdef ENABLE_BLOSC
     case Compressor::BLOSC_LZ:
 #undef BLOSC_LZ4
     case Compressor::BLOSC_LZ4:
@@ -676,12 +713,19 @@ uint64_t TileIO::overhead(Tile* tile, uint64_t nbytes) const {
 #undef BLOSC_ZSTD
     case Compressor::BLOSC_ZSTD:
       return Blosc::overhead(nbytes);
+#endif
+#ifdef ENABLE_FILTER_RLE
     case Compressor::RLE:
       return RLE::overhead(nbytes, tile->cell_size());
+#endif
+#ifdef ENABLE_FILTER_BZIP2
     case Compressor::BZIP2:
       return BZip::overhead(nbytes);
+#endif
+#ifdef ENABLE_FILTER_DD
     case Compressor::DOUBLE_DELTA:
       return DoubleDelta::overhead(nbytes);
+#endif
     default:
       // No compression
       return 0;

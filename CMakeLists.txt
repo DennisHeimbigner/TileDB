@@ -81,6 +81,30 @@ if (WIN32 AND NOT TILEDB_TBB_SHARED)
   set(TILEDB_TBB_SHARED ON)
 endif()
 
+# Additions
+option(TILEDB_EXAMPLES "If true, enables building the examples" ON)
+
+# Look at the -DTILEDB_FILTERS flag (pseudo-option)
+# libz is always enabled
+SET(ALLFILTERS "blosc,bzip2,dd,gzip,lz4,rle,zstd")
+if(TILEDB_FILTERS STREQUAL "")
+#  This is really supposed to be string valued option
+   set(TILEDB_FILTERS "${ALLFILTERS}" CACHE STRING "Specify set of filters to implement")
+endif()
+if(TILEDB_FILTERS)
+set(TILEDB_FILTERS "${TILEDB_FILTERS},zip")
+else()
+set(TILEDB_FILTERS "zip")
+endif()
+message(STATUS "TILEDB_FILTERS=${TILEDB_FILTERS}")
+string(REPLACE "," ";" TDBFILTERLIST ${TILEDB_FILTERS})
+foreach(CMPL ${TDBFILTERLIST})
+STRING(TOUPPER ${CMPL} UPCMP)
+set(CMPNAME "ENABLE_FILTER_${UPCMP}")
+set(${CMPNAME} ON)
+message(STATUS "${CMPNAME}=ON")
+endforeach()
+
 ############################################################
 # Superbuild setup
 ############################################################
@@ -186,7 +210,9 @@ enable_testing()
 add_subdirectory(tiledb)
 
 # Build examples
+if(TILEDB_EXAMPLES)
 add_subdirectory(examples)
+endif()
 
 # Build unit tests
 if (TILEDB_TESTS)

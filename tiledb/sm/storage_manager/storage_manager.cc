@@ -1671,13 +1671,17 @@ Status StorageManager::get_fragment_uris(
   return Status::Ok();
 }
 
-Status StorageManager::init_tbb(Config::SMParams& config) {
 #ifdef HAVE_TBB
+Status StorageManager::init_tbb(Config::SMParams& config) {
   tbb_scheduler_ = std::unique_ptr<tbb::task_scheduler_init>(
       new tbb::task_scheduler_init(config.num_tbb_threads_));
-#endif
   return Status::Ok();
 }
+#else
+Status StorageManager::init_tbb(Config::SMParams&) {
+  return Status::Ok();
+}
+#endif
 
 Status StorageManager::load_array_schema(
     const URI& array_uri, ObjectType object_type, OpenArray* open_array) {
